@@ -8,7 +8,8 @@ import lombok.Getter;
 public enum ExceptionCode {
     ORDER_WITH_ID_DOESNT_EXIST("Ordem com id informado não existe"),
     USER_ORDER_WITH_ID_DOESNT_EXIST("Usuário não possui ordem com o id informado"),
-    PRODUCT_WITH_ID_DOESNT_EXIST("Produto com id informado não existe");
+    PRODUCT_WITH_ID_DOESNT_EXIST("Produto com id informado não existe"),
+    UNKNOWN_ERROR("Erro desconhecido");
 
     private final String message;
 }

@@ -1,5 +1,6 @@
 package com.cube.order.exceptions;
 
+import com.cube.order.enums.ExceptionCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +54,15 @@ public class ExceptionController {
         ExceptionResponse response = buildExceptionResponse(ex);
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ExceptionResponse> handleUnknownException(RuntimeException ex) {
+        log.error("Unhandled error thrown with message: [{}]", ex.getMessage());
+
+        ExceptionResponse response = buildExceptionResponse(new InternalException(ExceptionCode.UNKNOWN_ERROR));
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     private ExceptionResponse buildExceptionResponse(BusinessException ex) {

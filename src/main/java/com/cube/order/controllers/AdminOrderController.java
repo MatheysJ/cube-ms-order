@@ -1,15 +1,15 @@
 package com.cube.order.controllers;
 
+import com.cube.order.dtos.internal.asaas.request.GeneratePaymentDTO;
+import com.cube.order.dtos.internal.asaas.response.GeneratedPaymentDTO;
 import com.cube.order.dtos.response.ResponseOrderDTO;
 import com.cube.order.services.OrderService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -37,5 +37,19 @@ public class AdminOrderController {
 
         log.info("Successfully got an order by id");
         return ResponseEntity.status(HttpStatus.OK).body(order);
+    }
+
+    /*TODO: Remove*/
+    @PostMapping("/test/asaas")
+    public ResponseEntity<GeneratedPaymentDTO> testAsaas(
+            @RequestHeader("customer_id") String customerId,
+            @RequestHeader("asaas_customer_id") String asaasCustomerId,
+            @Valid @RequestBody GeneratePaymentDTO body
+    ) {
+        log.info("Creating Asaas test order");
+        GeneratedPaymentDTO generatedPaymentDTO = orderService.submitAsaas(customerId, asaasCustomerId, body);
+
+        log.info("Successfully created Asaas test order");
+        return ResponseEntity.status(HttpStatus.OK).body(generatedPaymentDTO);
     }
 }

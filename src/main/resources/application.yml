@@ -1,6 +1,6 @@
 spring:
   application:
-    name: order
+    name: cube-ms-order
   docker:
     compose:
       enabled: true
@@ -11,6 +11,8 @@ spring:
         config:
           cubeMsProduct:
             url: http://remote-service.com
+          asaas:
+            url: https://api-sandbox.asaas.com
   config:
     import: optional:configserver:http://localhost:8888
 
@@ -29,3 +31,6 @@ server:
   port: 8082
   error:
     include-message: always
+
+  asaas:
+    api-key: "${ASAAS_API_KEY}"

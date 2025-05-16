@@ -1,4 +1,4 @@
-package com.cube.order.clients;
+package com.cube.order.clients.product;
 
 import com.cube.order.models.Item;
 import com.cube.order.dtos.request.RequestItemDTO;

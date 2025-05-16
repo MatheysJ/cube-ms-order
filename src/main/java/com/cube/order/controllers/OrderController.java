@@ -8,7 +8,13 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -21,7 +27,7 @@ public class OrderController {
     private OrderService orderService;
 
     @GetMapping()
-    public ResponseEntity<List<ResponseOrderDTO>> getOrdersByUser(@RequestHeader("user") String user) {
+    public ResponseEntity<List<ResponseOrderDTO>> getOrdersByUser(@RequestHeader("customer_id") String user) {
         log.info("Getting all user orders");
         List<ResponseOrderDTO> order = orderService.getOrdersByUser(user);
 
@@ -32,7 +38,7 @@ public class OrderController {
     @GetMapping("/{id}")
     public ResponseEntity<ResponseOrderDTO> getOrderByUserAndId(
             @PathVariable("id") Long id,
-            @RequestHeader("user") String user
+            @RequestHeader("customer_id") String user
     ) {
         log.info("Getting a user's order by id");
         ResponseOrderDTO order = orderService.getOrderByUserAndId(user, id);
@@ -44,7 +50,7 @@ public class OrderController {
     @PostMapping()
     public ResponseEntity<ResponseOrderDTO> submitOrder(
             @Valid @RequestBody SubmitOrderDTO body,
-            @RequestHeader("user") String user
+            @RequestHeader("customer_id") String user
     ) {
         log.info("Creating user's order");
         ResponseOrderDTO order = orderService.submitOrder(body, user);

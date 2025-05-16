@@ -1,6 +1,11 @@
 package com.cube.order.services;
 
-import com.cube.order.clients.ProductClient;
+import com.cube.order.clients.asaas.AsaasClient;
+import com.cube.order.clients.product.ProductClient;
+import com.cube.order.dtos.internal.asaas.request.GeneratePaymentBodyDTO;
+import com.cube.order.dtos.internal.asaas.request.GeneratePaymentDTO;
+import com.cube.order.dtos.internal.asaas.response.GeneratedPaymentDTO;
+import com.cube.order.mappers.PaymentMapper;
 import com.cube.order.models.Item;
 import com.cube.order.dtos.request.RequestItemDTO;
 import com.cube.order.dtos.request.RequestOrderDTO;
@@ -15,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -29,7 +35,11 @@ public class OrderServiceImpl implements OrderService {
 
     private OrderMapper orderMapper;
 
+    private PaymentMapper paymentMapper;
+
     private ProductClient productClient;
+
+    private AsaasClient asaasClient;
 
     @Override
     public List<ResponseOrderDTO> getAllOrders() {
@@ -80,10 +90,34 @@ public class OrderServiceImpl implements OrderService {
         RequestOrderDTO requestOrderDTO = orderMapper.submitToRequest(body);
         requestOrderDTO.setUserId(user);
         requestOrderDTO.setItems(populateOrderItems(body.getItems()));
-        Order order = orderRepository.save(orderMapper.requestToModel(requestOrderDTO));
+
+        Order newOrder = orderMapper.requestToModel(requestOrderDTO);
+        //GeneratedPaymentDTO generatedPaymentDTO = asaasClient.generatePayment();
+
+        Order savedOrder = orderRepository.save(newOrder);
 
         log.info("Started returning user's {} new order", user);
-        return orderMapper.modelToResponse(order);
+        return orderMapper.modelToResponse(savedOrder);
+    }
+
+    @Override
+    public GeneratedPaymentDTO submitAsaas(String customerId, String asaasCustomerId, GeneratePaymentDTO body) {
+        log.info("Started submitAsaas");
+
+        GeneratePaymentBodyDTO builtPaymentBody = buildAsaasPayment(body, asaasCustomerId);
+        GeneratedPaymentDTO generatedPaymentDTO = asaasClient.generatePayment(builtPaymentBody);
+
+        log.info("Started submitAsaas");
+        return generatedPaymentDTO;
+    }
+
+    private GeneratePaymentBodyDTO buildAsaasPayment(GeneratePaymentDTO body, String asaasCustomerId) {
+        GeneratePaymentBodyDTO generatePaymentBodyDTO = paymentMapper.bodyToBuilt(body);
+
+        generatePaymentBodyDTO.setCustomer(asaasCustomerId);
+        generatePaymentBodyDTO.setDueDate(LocalDate.now());
+
+        return generatePaymentBodyDTO;
     }
 
     private Order getByIdOrThrowNotFoundError(Long id) {
