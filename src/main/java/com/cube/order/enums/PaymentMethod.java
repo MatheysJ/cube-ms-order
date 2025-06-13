@@ -2,6 +2,7 @@ package com.cube.order.enums;
 
 public enum PaymentMethod {
     PIX,
-    CASH,
-    CREDIT_CARD
+    BOLETO,
+    CREDIT_CARD,
+    UNDEFINED
 }

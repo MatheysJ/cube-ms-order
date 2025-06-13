@@ -39,7 +39,7 @@ public class ExceptionController {
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ExceptionResponse> handleUnauthorizedException(UnauthorizedException ex) {
+        public ResponseEntity<ExceptionResponse> handleUnauthorizedException(UnauthorizedException ex) {
         log.warn("UnauthorizedException thrown with message: [{}]", ex.getMessage());
 
         ExceptionResponse response = buildExceptionResponse(ex);

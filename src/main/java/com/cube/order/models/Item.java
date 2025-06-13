@@ -37,11 +37,13 @@ public class Item {
 
     private Double price;
 
+    private Integer quantity;
+
     @Convert(converter = MapToJsonConverter.class)
     @Column(columnDefinition = "CLOB")
     private Map<String, Object> options;
 
     @ManyToOne
-    @JoinColumn(name = "orderId")
+    @JoinColumn(name = "order_id")
     private Order order;
 }

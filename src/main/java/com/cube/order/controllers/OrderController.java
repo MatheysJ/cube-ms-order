@@ -1,5 +1,6 @@
 package com.cube.order.controllers;
 
+import com.cube.order.dtos.request.AsaasWebHookBody;
 import com.cube.order.dtos.request.SubmitOrderDTO;
 import com.cube.order.dtos.response.ResponseOrderDTO;
 import com.cube.order.services.OrderService;
@@ -50,12 +51,24 @@ public class OrderController {
     @PostMapping()
     public ResponseEntity<ResponseOrderDTO> submitOrder(
             @Valid @RequestBody SubmitOrderDTO body,
-            @RequestHeader("customer_id") String user
+            @RequestHeader("customer_id") String user,
+            @RequestHeader("asaas_customer_id") String asaasCustomerId
     ) {
         log.info("Creating user's order");
-        ResponseOrderDTO order = orderService.submitOrder(body, user);
+        ResponseOrderDTO order = orderService.submitOrder(body, user, asaasCustomerId);
 
         log.info("Successfully created user's order");
         return ResponseEntity.status(HttpStatus.CREATED).body(order);
+    }
+
+    @PostMapping("/status")
+    public ResponseEntity changeOrderStatus(
+            @Valid @RequestBody AsaasWebHookBody body
+    ) {
+        log.info("Starting to read webHook data");
+        orderService.changeOrderStatus(body);
+
+        log.info("Successfully read webHook data");
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
 }

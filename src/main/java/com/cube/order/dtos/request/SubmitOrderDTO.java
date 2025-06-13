@@ -4,6 +4,7 @@ import com.cube.order.enums.PaymentMethod;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,17 +21,15 @@ public class SubmitOrderDTO {
 
     @Valid
     @NotNull
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod billingType;
+
+    @Valid
     private AddressDTO address;
 
     @Valid
     @NotNull
-    /*TODO: Remove comment @NotEmpty*/
+    @NotEmpty
     private List<RequestItemDTO> items;
-
-    @Valid
-    @NotNull
-    @Enumerated(EnumType.STRING)
-    private PaymentMethod paymentMethod;
-
 
 }

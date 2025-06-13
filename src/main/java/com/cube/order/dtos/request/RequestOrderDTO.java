@@ -1,5 +1,6 @@
 package com.cube.order.dtos.request;
 
+import com.cube.order.enums.PaymentMethod;
 import com.cube.order.models.Item;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,5 +20,7 @@ public class RequestOrderDTO {
     private AddressDTO address;
 
     private List<Item> items;
+
+    private PaymentMethod billingType;
 
 }

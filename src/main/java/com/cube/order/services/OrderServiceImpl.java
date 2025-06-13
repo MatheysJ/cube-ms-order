@@ -2,9 +2,13 @@ package com.cube.order.services;
 
 import com.cube.order.clients.asaas.AsaasClient;
 import com.cube.order.clients.product.ProductClient;
+import com.cube.order.dtos.internal.asaas.request.CallbackDTO;
 import com.cube.order.dtos.internal.asaas.request.GeneratePaymentBodyDTO;
 import com.cube.order.dtos.internal.asaas.request.GeneratePaymentDTO;
 import com.cube.order.dtos.internal.asaas.response.GeneratedPaymentDTO;
+import com.cube.order.dtos.request.AsaasWebHookBody;
+import com.cube.order.dtos.response.CatalogItemDTO;
+import com.cube.order.mappers.ItemMapper;
 import com.cube.order.mappers.PaymentMapper;
 import com.cube.order.models.Item;
 import com.cube.order.dtos.request.RequestItemDTO;
@@ -20,8 +24,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,6 +42,8 @@ public class OrderServiceImpl implements OrderService {
     private OrderMapper orderMapper;
 
     private PaymentMapper paymentMapper;
+
+    private ItemMapper itemMapper;
 
     private ProductClient productClient;
 
@@ -84,20 +92,33 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public ResponseOrderDTO submitOrder(SubmitOrderDTO body, String user) {
+    public ResponseOrderDTO submitOrder(SubmitOrderDTO body, String user, String asaasCustomerId) {
         log.info("Started submitting user's {} new order", user);
-
         RequestOrderDTO requestOrderDTO = orderMapper.submitToRequest(body);
         requestOrderDTO.setUserId(user);
         requestOrderDTO.setItems(populateOrderItems(body.getItems()));
 
         Order newOrder = orderMapper.requestToModel(requestOrderDTO);
-        //GeneratedPaymentDTO generatedPaymentDTO = asaasClient.generatePayment();
+
+        if (newOrder.getItems() != null) {
+            newOrder.getItems().forEach(item -> item.setOrder(newOrder));
+        }
+
+        GeneratePaymentBodyDTO builtPaymentBody = buildPayment(newOrder, asaasCustomerId);
+
+        log.info("Started to generate order on Asaas");
+        GeneratedPaymentDTO generatedPaymentDTO = asaasClient.generatePayment(builtPaymentBody);
+
+        newOrder.setPrice(generatedPaymentDTO.getValue().doubleValue());
+        newOrder.setInvoiceUrl(generatedPaymentDTO.getInvoiceUrl());
+        newOrder.setStatus("PENDING");
+        newOrder.setAsaasOrderId(generatedPaymentDTO.getId());
 
         Order savedOrder = orderRepository.save(newOrder);
 
         log.info("Started returning user's {} new order", user);
-        return orderMapper.modelToResponse(savedOrder);
+        ResponseOrderDTO responseOrderDTO = orderMapper.modelToResponse(savedOrder);
+        return responseOrderDTO;
     }
 
     @Override
@@ -109,6 +130,43 @@ public class OrderServiceImpl implements OrderService {
 
         log.info("Started submitAsaas");
         return generatedPaymentDTO;
+    }
+
+    @Override
+    public void changeOrderStatus(AsaasWebHookBody body) {
+        log.info("Started to update order status in webHook");
+
+        log.info("{}", body);
+        Optional<Order> order = orderRepository.findByAsaasOrderId(body.getPayment().getId());
+
+        if (order.isEmpty()) {
+            throw new NotFoundException(ExceptionCode.ASAAS_ORDER_WITH_ID_DOESNT_EXIST);
+        }
+
+        Order pendingOrder = order.get();
+
+        pendingOrder.setStatus("PAID");
+        orderRepository.save(pendingOrder);
+
+        log.info("Successfully updated order status in webHook");
+    }
+
+    private GeneratePaymentBodyDTO buildPayment(Order order, String asaasCustomerId) {
+        GeneratePaymentBodyDTO generatePaymentBodyDTO = paymentMapper.orderBodyToBuiltPayment(order);
+
+        generatePaymentBodyDTO.setCustomer(asaasCustomerId);
+        generatePaymentBodyDTO.setDueDate(LocalDate.now());
+        generatePaymentBodyDTO.setCallback(
+                CallbackDTO
+                        .builder()
+                        .autoRedirect(true)
+                        /*.successUrl("http://localhost:3000/orders/" + order.getId())*/
+                        .successUrl("https://google.com.br")
+                        .build()
+        );
+        generatePaymentBodyDTO.setValue(BigDecimal.valueOf(order.getPrice()));
+
+        return generatePaymentBodyDTO;
     }
 
     private GeneratePaymentBodyDTO buildAsaasPayment(GeneratePaymentDTO body, String asaasCustomerId) {
@@ -140,14 +198,34 @@ public class OrderServiceImpl implements OrderService {
         return optionalOrder.get();
     }
 
-    private List<Item> populateOrderItems(List<RequestItemDTO> ids) {
-        log.info("Started getting product data by id from client");
+    private List<Item> populateOrderItems(List<RequestItemDTO> requestItems) {
+        try {
+            log.info("Started getting product data by id from client");
+            List<CatalogItemDTO> catalogItems = productClient.getProductsByIds(requestItems);
 
-        return List.of();
-        /*
-        List<Item> items = productClient.getProductsByIds(ids);
+            List<Item> items = itemMapper.catalogToModel(catalogItems);
+            log.info("Successfully got product data by id from client");
 
-        log.info("Successfully got product data by id from client");
-        return items;*/
+            if (requestItems.size() != catalogItems.size()) throw new NotFoundException(ExceptionCode.PRODUCT_NOT_FOUND);
+
+            Map<String, Integer> requestItemQuantities = requestItems.stream()
+                    .collect(Collectors.toMap(
+                            RequestItemDTO::getId,
+                            RequestItemDTO::getQuantity
+                    ));
+
+            items.forEach(item -> {
+                Integer quantity = requestItemQuantities.get(item.getId());
+                if (quantity != null) {
+                    item.setQuantity(quantity);
+                }
+            });
+
+            return items;
+        } catch (Exception exception) {
+            log.error("Error populating order items", exception);
+
+            throw exception;
+        }
     }
 }

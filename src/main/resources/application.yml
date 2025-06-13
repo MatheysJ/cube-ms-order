@@ -9,8 +9,6 @@ spring:
     openfeign:
       client:
         config:
-          cubeMsProduct:
-            url: http://remote-service.com
           asaas:
             url: https://api-sandbox.asaas.com
   config:
