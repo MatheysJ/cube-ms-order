@@ -1,0 +1,13 @@
+services:
+  oracle-db:
+    image: container-registry.oracle.com/database/enterprise:latest
+    container_name: cube-ms-order-oracle-db
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_ALLOW_REMOTE: "true"
+      ORACLE_PWD: cubeMsOrder
+      DB_USER: ${DB_USERNAME:-cubeMsOrder}
+      DB_PASS: ${DB_PASSWORD:-cubeMsOrder}
+    volumes:
+      - ./init-app-user.sql:/opt/oracle/scripts/startup/init-app-user.sql
