@@ -160,8 +160,7 @@ public class OrderServiceImpl implements OrderService {
                 CallbackDTO
                         .builder()
                         .autoRedirect(true)
-                        /*.successUrl("http://localhost:3000/orders/" + order.getId())*/
-                        .successUrl("https://google.com.br")
+                        .successUrl("https://cube.matheus-junior.xyz/orders/" + order.getId())
                         .build()
         );
         generatePaymentBodyDTO.setValue(BigDecimal.valueOf(order.getPrice()));
